@@ -2,7 +2,8 @@ PROJECT_NAME     := ble_app_uart_pca10040_s132
 TARGETS          := nrf52832_xxaa
 OUTPUT_DIRECTORY := _build
 
-SDK_ROOT := ../../../../../..
+SDK_ROOT := ../../../../../../../../nRF5_SDK_16.0.0_98a08e2
+LOCAL_SDK_ROOT := ../../../../../..
 PROJ_DIR := ../../..
 
 $(OUTPUT_DIRECTORY)/nrf52832_xxaa.out: \
@@ -71,7 +72,7 @@ SRC_FILES += \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_ble.c \
   $(SDK_ROOT)/components/softdevice/common/nrf_sdh_soc.c \
-  $(SDK_ROOT)/examples/common/time_sync.c \
+  $(LOCAL_SDK_ROOT)/examples/common/time_sync.c \
 
 # Include folders common to all targets
 INC_FOLDERS += \
@@ -207,7 +208,7 @@ INC_FOLDERS += \
   $(SDK_ROOT)/components/nfc/ndef/conn_hand_parser/ac_rec_parser \
   $(SDK_ROOT)/components/libraries/stack_guard \
   $(SDK_ROOT)/components/libraries/log/src \
-  $(SDK_ROOT)/examples/common \
+  $(LOCAL_SDK_ROOT)/examples/common \
 
 # Libraries common to all targets
 LIB_FILES += \
