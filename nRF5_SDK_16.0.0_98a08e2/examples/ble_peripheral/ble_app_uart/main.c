@@ -68,6 +68,7 @@
 #include "app_util_platform.h"
 #include "bsp_btn_ble.h"
 #include "nrf_pwr_mgmt.h"
+// #include "datatest.h"
 
 #if defined (UART_PRESENT)
 #include "nrf_uart.h"
@@ -127,6 +128,45 @@ static bool m_gpio_trigger_enabled;
 static void ts_evt_callback(const ts_evt_t* evt);
 static void ts_gpio_trigger_enable(void);
 static void ts_gpio_trigger_disable(void);
+
+APP_TIMER_DEF(m_datatest_id);
+static char nus_message[64];
+static uint32_t data_count = 0;
+
+void nus_data_send(uint8_t *data_array, uint16_t length)
+{
+    uint32_t       err_code;
+    err_code = ble_nus_data_send(&m_nus, data_array, &length, m_conn_handle);
+    if ((err_code != NRF_ERROR_INVALID_STATE) && (err_code != NRF_ERROR_RESOURCES) && (err_code != NRF_ERROR_NOT_FOUND))
+    {
+        APP_ERROR_CHECK(err_code);
+    }
+}
+
+
+static void update_timeout_handler(void * p_context)
+{
+    // NRF_LOG_INFO("test");
+    // uint32_t err_code;
+    // uint16_t length = 64;
+    memset(nus_message, 0, sizeof(nus_message)); //Clear the bugger
+
+    sprintf(nus_message,"%ld\n",data_count);
+
+    nus_data_send((uint8_t *)nus_message, strlen(nus_message)); //ignore the nulls!
+    data_count++;
+}
+
+void datatest_timer_init(void)
+{
+    uint32_t err_code;
+    err_code = app_timer_create(&m_datatest_id, APP_TIMER_MODE_REPEATED, update_timeout_handler);
+    APP_ERROR_CHECK(err_code);
+
+    err_code = app_timer_start(m_datatest_id, 164 , NULL);
+    APP_ERROR_CHECK(err_code);
+}
+
 
 
 /**@brief Function for assert macro callback.
@@ -853,6 +893,8 @@ int main(void)
     conn_params_init();
 
     sync_timer_init();
+
+    datatest_timer_init();
 
     // Start execution.
     printf("\r\nUART started.\r\n");

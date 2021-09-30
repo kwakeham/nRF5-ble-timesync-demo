@@ -73,7 +73,7 @@
 #define APP_BLE_OBSERVER_PRIO   3                                       /**< BLE observer priority of the application. There is no need to modify this value. */
 
 #define UART_TX_BUF_SIZE        512                                     /**< UART TX buffer size. */
-#define UART_RX_BUF_SIZE        512                                     /**< UART RX buffer size. */
+#define UART_RX_BUF_SIZE        1024                                     /**< UART RX buffer size. */
 
 #define NUS_SERVICE_UUID_TYPE   BLE_UUID_TYPE_VENDOR_BEGIN              /**< UUID type for the Nordic UART Service (vendor specific). */
 
@@ -241,7 +241,7 @@ static void ble_nus_chars_received_uart_print(uint8_t * p_data, uint16_t data_le
             ret_val = app_uart_put(p_data[i]);
             if ((ret_val != NRF_SUCCESS) && (ret_val != NRF_ERROR_BUSY))
             {
-                NRF_LOG_ERROR("app_uart_put failed for index 0x%04x.", i);
+                NRF_LOG_INFO("app_uart_put failed for index 0x%04x.", i);
                 APP_ERROR_CHECK(ret_val);
             }
         } while (ret_val == NRF_ERROR_BUSY);
