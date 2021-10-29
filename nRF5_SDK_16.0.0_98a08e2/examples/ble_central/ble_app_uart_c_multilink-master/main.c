@@ -72,8 +72,8 @@
 #define APP_BLE_CONN_CFG_TAG    1                                       /**< Tag that refers to the BLE stack configuration set with @ref sd_ble_cfg_set. The default tag is @ref BLE_CONN_CFG_TAG_DEFAULT. */
 #define APP_BLE_OBSERVER_PRIO   3                                       /**< BLE observer priority of the application. There is no need to modify this value. */
 
-#define UART_TX_BUF_SIZE        512                                     /**< UART TX buffer size. */
-#define UART_RX_BUF_SIZE        1024                                     /**< UART RX buffer size. */
+#define UART_TX_BUF_SIZE        1024                                     /**< UART TX buffer size. */
+#define UART_RX_BUF_SIZE        512                                     /**< UART RX buffer size. */
 
 #define NUS_SERVICE_UUID_TYPE   BLE_UUID_TYPE_VENDOR_BEGIN              /**< UUID type for the Nordic UART Service (vendor specific). */
 
@@ -91,6 +91,8 @@ NRF_BLE_GQ_DEF(m_ble_gatt_queue,                                        /**< BLE
 static uint16_t m_ble_nus_max_data_len = BLE_GATT_ATT_MTU_DEFAULT - OPCODE_LENGTH - HANDLE_LENGTH; /**< Maximum length of data (in bytes) that can be transmitted to the peer by the Nordic UART service module. */
 
 static bool m_gpio_trigger_enabled;
+
+uint8_t count_old = 0;
 
 static void ts_evt_callback(const ts_evt_t* evt);
 static void ts_gpio_trigger_enable(void);
@@ -339,7 +341,8 @@ void uart_event_handle(app_uart_evt_t * p_event)
 static void ble_nus_c_evt_handler(ble_nus_c_t * p_ble_nus_c, ble_nus_c_evt_t const * p_ble_nus_evt)
 {
     ret_code_t err_code;
-
+    
+ 
     switch (p_ble_nus_evt->evt_type)
     {
         case BLE_NUS_C_EVT_DISCOVERY_COMPLETE:
@@ -353,7 +356,21 @@ static void ble_nus_c_evt_handler(ble_nus_c_t * p_ble_nus_c, ble_nus_c_evt_t con
             break;
 
         case BLE_NUS_C_EVT_NUS_TX_EVT:
+
+            // count = p_ble_nus_evt->p_data[1];
+            // if ((p_ble_nus_evt->p_data[0] - count_old) != 1)
+            // {
+            //     app_uart_put(p_ble_nus_evt->p_data[0]);
+            // }
+            // app_uart_put(p_ble_nus_evt->p_data[0]);
+            // app_uart_put('\n');
             ble_nus_chars_received_uart_print(p_ble_nus_evt->p_data, p_ble_nus_evt->data_len);
+                // UNUSED_PARAMETER(ble_nus_chars_received_uart_print);
+            // }
+            // count_old = p_ble_nus_evt->p_data[0];
+            // printf("%d\n",p_ble_nus_evt->p_data[1]);
+            // ble_nus_chars_received_uart_print(p_ble_nus_evt->p_data, p_ble_nus_evt->data_len);
+            
             break;
 
         case BLE_NUS_C_EVT_DISCONNECTED:

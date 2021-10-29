@@ -93,7 +93,9 @@
 
 #define APP_BLE_OBSERVER_PRIO           3                                           /**< Application's BLE observer priority. You shouldn't need to modify this value. */
 
-#define APP_ADV_INTERVAL                64                                          /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
+#define APP_ADV_INTERVAL                128                                          /**< The advertising interval (in units of 0.625 ms. This value corresponds to 40 ms). */
+                                                                                    /*https://devzone.nordicsemi.com/f/nordic-q-a/55264/nus-connection-problems-with-timesync-example-ported-to-sdk16-0-0
+                                                                                    This seems to still be here, was 64, now 128, conflicting time slots*/
 
 #define APP_ADV_DURATION                18000                                       /**< The advertising duration (180 seconds) in units of 10 milliseconds. */
 
@@ -130,8 +132,11 @@ static void ts_gpio_trigger_enable(void);
 static void ts_gpio_trigger_disable(void);
 
 APP_TIMER_DEF(m_datatest_id);
-static char nus_message[64];
-static uint32_t data_count = 0;
+static char nus_message[196];
+static uint8_t data_count = 0;
+bool timer_running = false;
+bool start_timer = false;
+bool stop_timer = false;
 
 void nus_data_send(uint8_t *data_array, uint16_t length)
 {
@@ -149,22 +154,48 @@ static void update_timeout_handler(void * p_context)
     // NRF_LOG_INFO("test");
     // uint32_t err_code;
     // uint16_t length = 64;
-    memset(nus_message, 0, sizeof(nus_message)); //Clear the bugger
+    memset(nus_message, 0x20, sizeof(nus_message)); //Clear the bugger
 
-    sprintf(nus_message,"%ld\n",data_count);
+    // for (size_t i = 0; i < sizeof(nus_message); i++)
+    // {
+    //     nus_message[i] = data_count;
+    // }
+    
+    sprintf(nus_message,"%d\n",data_count);
 
-    nus_data_send((uint8_t *)nus_message, strlen(nus_message)); //ignore the nulls!
+    nus_data_send((uint8_t*) nus_message, sizeof(nus_message)); 
     data_count++;
 }
 
 void datatest_timer_init(void)
 {
     uint32_t err_code;
-    err_code = app_timer_create(&m_datatest_id, APP_TIMER_MODE_REPEATED, update_timeout_handler);
-    APP_ERROR_CHECK(err_code);
+    if (start_timer)
+    {
+        if (!timer_running)
+        {
+            err_code = app_timer_start(m_datatest_id, 482 , NULL);
+            APP_ERROR_CHECK(err_code);
 
-    err_code = app_timer_start(m_datatest_id, 164 , NULL);
-    APP_ERROR_CHECK(err_code);
+            NRF_LOG_INFO ("timer started");
+            timer_running = true;
+        } else
+        {
+            NRF_LOG_INFO("timer already running");
+        }
+        start_timer = false;
+    }
+
+    if (stop_timer)
+    {
+        if(timer_running)
+        {
+            err_code = app_timer_stop(m_datatest_id);
+            APP_ERROR_CHECK(err_code);
+        }
+        stop_timer = false;
+    }
+
 }
 
 
@@ -190,6 +221,9 @@ void assert_nrf_callback(uint16_t line_num, const uint8_t * p_file_name)
 static void timers_init(void)
 {
     ret_code_t err_code = app_timer_init();
+    APP_ERROR_CHECK(err_code);
+
+    err_code = app_timer_create(&m_datatest_id, APP_TIMER_MODE_REPEATED, update_timeout_handler);
     APP_ERROR_CHECK(err_code);
 }
 
@@ -418,12 +452,16 @@ static void ble_evt_handler(ble_evt_t const * p_ble_evt, void * p_context)
             m_conn_handle = p_ble_evt->evt.gap_evt.conn_handle;
             err_code = nrf_ble_qwr_conn_handle_assign(&m_qwr, m_conn_handle);
             APP_ERROR_CHECK(err_code);
+            // datatest_timer_init(); //this is causing an issue
+            start_timer = true;
             break;
 
         case BLE_GAP_EVT_DISCONNECTED:
             NRF_LOG_INFO("Disconnected");
             // LED indication will be changed when advertising starts.
             m_conn_handle = BLE_CONN_HANDLE_INVALID;
+            // err_code = app_timer_stop(m_datatest_id);
+            // APP_ERROR_CHECK(err_code);
             break;
 
         case BLE_GAP_EVT_PHY_UPDATE_REQUEST:
@@ -894,7 +932,7 @@ int main(void)
 
     sync_timer_init();
 
-    datatest_timer_init();
+    // datatest_timer_init();
 
     // Start execution.
     printf("\r\nUART started.\r\n");
@@ -904,6 +942,7 @@ int main(void)
     // Enter main loop.
     for (;;)
     {
+        datatest_timer_init();
         idle_state_handle();
     }
 }
